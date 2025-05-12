@@ -1,1 +1,1 @@
-﻿web: gunicorn --pythonpath pet\ pocket run:app
+﻿web: gunicorn wsgi:app
