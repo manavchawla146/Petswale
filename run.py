@@ -1,4 +1,4 @@
-from .PetPocket import create_app, db
+from PetPocket import create_app, db
 from .PetPocket.models import User
 
 # Create app context
