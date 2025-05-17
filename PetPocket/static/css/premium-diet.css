@@ -1,0 +1,62 @@
+.premium-diet {
+    /* @tweakable the background color of the banner */
+    /* background: linear-gradient(135deg, #f6f8fc 0%, #e9f0f8 100%); */
+    background: url(https://hoppers.wpbingosite.com/wp-content/uploads/2021/07/back-3.png);
+    /* @tweakable the padding of the banner */
+    padding: 4rem 2rem;
+  }
+  
+  .premium-diet-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    align-items: center;
+  }
+  
+  .premium-diet-content {
+    /* @tweakable the padding around the diet plan content */
+    padding: 2rem;
+  }
+  
+  .premium-diet-content h2 {
+    font-size: clamp(2rem, 4vw, 2.5rem);
+    color: #333;
+    margin-bottom: 1.5rem;
+  }
+  
+  .premium-diet-content p {
+    color: #666;
+    font-size: clamp(1rem, 1.5vw, 1.1rem);
+    margin-bottom: 2rem;
+    line-height: 1.6;
+  }
+  
+  .premium-diet-btn {
+    display: inline-block;
+    padding: 1rem 2rem;
+    background: linear-gradient(135deg, #a8edea 0%, #BB98FD 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 25px;
+    font-weight: 600;
+    transition: transform 0.3s ease;
+  }
+  
+  .premium-diet-btn:hover {
+    transform: scale(1.05);
+  }
+  
+  .premium-diet-img {
+    width: 100%;
+    height: auto;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+  }
+  
+  @media (max-width: 768px) {
+    .premium-diet-container {
+        grid-template-columns: 1fr;
+    }
+  }
