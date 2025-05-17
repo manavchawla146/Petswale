@@ -1,0 +1,179 @@
+/* Elegant Admin Theme */
+
+/* Base Reset and Typography */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background-color: #ffffff; /* White background */
+    color: #333; /* Dark text color */
+    line-height: 1.6;
+    font-size: 14px;
+}
+a {
+    color: #FF6B6B; /* Red color for links */
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
+
+/* Navbar */
+.navbar {
+    background-color: #FF6B6B; /* Red background */
+    border-bottom: 1px solid #333; /* Black border */
+    margin-bottom: 20px;
+}
+.navbar .navbar-brand {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #ffffff; /* White text */
+}
+.navbar .nav > li > a {
+    color: #ffffff; /* White text */
+    padding: 15px 20px;
+    transition: background 0.3s, color 0.3s;
+}
+.navbar .nav > li > a:hover,
+.navbar .nav > li.active > a {
+    background-color: #333; /* Black background on hover */
+    color: #ffffff; /* White text */
+}
+
+/* Sidebar (if any) */
+.sidebar {
+    background-color: #ffffff; /* White background */
+    border: 1px solid #333; /* Black border */
+    border-radius: 4px;
+    padding: 20px;
+}
+.sidebar .nav-link {
+    display: block;
+    padding: 10px 15px;
+    color: #333; /* Black text */
+    border-radius: 4px;
+    transition: background 0.3s;
+}
+.sidebar .nav-link:hover,
+.sidebar .nav-link.active {
+    background-color: #FF6B6B; /* Red background on hover */
+    color: #ffffff; /* White text */
+}
+
+/* Cards and Containers */
+.stats-card,
+.chart-container,
+.sidebar,
+.product-table {
+    background-color: #ffffff; /* White background */
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.stats-card {
+    padding: 20px;
+    margin-bottom: 20px;
+}
+.stats-card h3 {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #333; /* Black text */
+    margin-bottom: 10px;
+}
+.stats-card .value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #FF6B6B; /* Red text */
+}
+.stats-card .change {
+    font-size: 0.9rem;
+    margin-top: 5px;
+}
+
+/* Tables */
+.product-table,
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.product-table th,
+.product-table td,
+.table th,
+.table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #333; /* Black border */
+}
+.product-table th,
+.table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #333; /* Black text */
+}
+.product-table tr:hover,
+.table tr:hover {
+    background-color: #f1f3f5;
+}
+
+/* Forms and Inputs */
+.form-control,
+input[type="date"],
+select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #333; /* Black border */
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+.form-control:focus,
+input[type="date"]:focus,
+select:focus {
+    outline: none;
+    border-color: #FF6B6B; /* Red border on focus */
+    box-shadow: 0 0 3px rgba(255,107,107,0.25);
+}
+.btn {
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.3s, box-shadow 0.3s;
+}
+.btn-primary {
+    background-color: #FF6B6B; /* Red background */
+    border: 1px solid #FF6B6B; /* Red border */
+    color: #fff; /* White text */
+}
+.btn-primary:hover {
+    background-color: #333; /* Black background on hover */
+    border-color: #333; /* Black border */
+    box-shadow: 0 2px 6px rgba(51,51,51,0.3);
+}
+
+/* Utility Helpers */
+.text-center {
+    text-align: center;
+}
+.mt-4 {
+    margin-top: 1.5rem;
+}
+.mb-4 {
+    margin-bottom: 1.5rem;
+}
+.p-2 {
+    padding: 0.5rem;
+}
+
+/* Responsive tweaks */
+@media (max-width: 767px) {
+    .navbar .nav > li > a {
+        padding: 10px;
+        font-size: 1rem;
+    }
+    .stats-card .value {
+        font-size: 1.8rem;
+    }
+}
+  

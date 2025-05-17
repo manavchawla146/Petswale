@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PetPocket - Search</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/search.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/navbar.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Google Fonts and Material Symbols -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800&display=swap');
+        /* Remove underline from product details */
+        .product-card a {
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    {% include 'navbar.html' %}
+
+    <div class="search-container">
+        <input type="text" class="search-box" placeholder="Search for pet products...">
+        <button class="search-btn">
+            <i class="fa-solid fa-magnifying-glass"></i>
+        </button>
+        <div class="suggestions"></div>
+    </div>
+
+    <div class="product-grid" id="productsGrid"></div>
+
+    {% include 'footer.html' %}
+
+    <nav class="mobile-bottom-nav">
+        <a href="{{ url_for('main.home') }}">
+            <span class="material-symbols-outlined">home</span>
+            <span>Home</span>
+        </a>
+        <a href="{{ url_for('main.search') }}">
+            <span class="material-symbols-outlined">search</span>
+            <span>Search</span>
+        </a>
+        <a href="{{ url_for('main.cart') }}">
+            <span class="material-symbols-outlined">shopping_cart</span>
+            <span>Cart</span>
+        </a>
+        <a href="{{ url_for('main.profile') }}">
+            <span class="material-symbols-outlined">person</span>
+            <span>Profile</span>
+        </a>
+    </nav>
+
+    <script src="https://kit.fontawesome.com/51c1e7b4cb.js" crossorigin="anonymous"></script>
+    <script>
+        const searchBox = document.querySelector('.search-box');
+        const suggestionsBox = document.querySelector('.suggestions');
+        const productsGrid = document.querySelector('#productsGrid');
+        const searchBtn = document.querySelector('.search-btn');
+
+        async function fetchProducts(searchTerm = '') {
+            try {
+                const response = await fetch(`/api/search?q=${encodeURIComponent(searchTerm)}`);
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching products:', error);
+                return [];
+            }
+        }
+
+        function createProductCard(product) {
+            return `
+                <div class="product-card" data-product-id="${product.id}" data-category="${product.category || ''}" onclick="window.location.href='/product/${product.id}'">
+                    <div class="product-content">
+                        <img src="${product.image_url || 'https://placehold.co/200x200/46f27a/ffffff?text=Product'}" alt="${product.name}">
+                        <h3>${product.name}</h3>
+                        <div class="product-details">
+                            <span class="product-price">₹${product.price.toFixed(2)}</span>
+                            <span class="product-rating">★★★★☆ (4)</span>
+                        </div>
+                    </div>
+                    <div class="product-actions">
+                        <button class="add-to-cart" onclick="event.stopPropagation(); addToCart(${product.id})">
+                            <span class="material-symbols-outlined">shopping_cart</span> Add to Cart
+                        </button>
+                        <button class="add-to-wishlist" onclick="event.stopPropagation(); toggleWishlist(${product.id}, this)">
+                            <span class="material-symbols-outlined">favorite</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function displayProducts(searchTerm = '') {
+            const products = await fetchProducts(searchTerm);
+            
+            if (products.length === 0) {
+                productsGrid.innerHTML = `
+                    <div class="no-results">
+                        <h2>No products found 😢</h2>
+                        <p>Try searching for something else!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            productsGrid.innerHTML = products
+                .map(product => createProductCard(product))
+                .join('');
+        }
+
+        async function showSuggestions(searchTerm) {
+            if (!searchTerm) {
+                suggestionsBox.style.display = 'none';
+                return;
+            }
+
+            const products = await fetchProducts(searchTerm);
+            const filteredSuggestions = products.slice(0, 5);
+
+            if (filteredSuggestions.length > 0) {
+                suggestionsBox.innerHTML = filteredSuggestions
+                    .map(product => `
+                        <div class="suggestion-item" data-id="${product.id}">
+                            ${product.name}
+                        </div>
+                    `).join('');
+                suggestionsBox.style.display = 'block';
+            } else {
+                suggestionsBox.style.display = 'none';
+            }
+        }
+
+        async function addToCart(productId) {
+            try {
+                const response = await fetch('/add_to_cart', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ product_id: productId }),
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert('Item added to cart!');
+                } else if (data.redirect) {
+                    window.location.href = data.redirect;
+                } else {
+                    alert(data.message || 'Failed to add to cart');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while adding to cart');
+            }
+        }
+
+        async function toggleWishlist(productId, button) {
+            try {
+                const response = await fetch('/add_to_wishlist', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ product_id: productId }),
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert(data.message);
+                    button.querySelector('.material-symbols-outlined').style.color = '#FF6B6B';
+                } else if (data.redirect) {
+                    window.location.href = data.redirect;
+                } else {
+                    alert(data.message || 'Failed to add to wishlist');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while adding to wishlist');
+            }
+        }
+
+        // Event Listeners
+        searchBox.addEventListener('input', (e) => {
+            showSuggestions(e.target.value);
+        });
+
+        searchBox.addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                await displayProducts(searchBox.value);
+                suggestionsBox.style.display = 'none';
+            }
+        });
+
+        searchBtn.addEventListener('click', async () => {
+            await displayProducts(searchBox.value);
+            suggestionsBox.style.display = 'none';
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!suggestionsBox.contains(e.target) && e.target !== searchBox) {
+                suggestionsBox.style.display = 'none';
+            }
+        });
+
+        suggestionsBox.addEventListener('click', async (e) => {
+            if (e.target.classList.contains('suggestion-item')) {
+                searchBox.value = e.target.textContent.trim();
+                await displayProducts(searchBox.value);
+                suggestionsBox.style.display = 'none';
+            }
+        });
+
+        // Initial load
+        displayProducts();
+    </script>
+</body>
+</html>

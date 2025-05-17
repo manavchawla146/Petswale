@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ pet_type.name }} Products | PetPocket</title>
+  
+  <!-- CSS Files -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/product-listing.css') }}">
+  <link rel="stylesheet" href="{{url_for('static', filename='css/navbar.css')}}">
+  
+  <!-- Google Fonts and Icons -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <style>
+      @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800&display=swap');
+      
+      /* Remove underline from product details */
+      .product-card a {
+          text-decoration: none;
+      }
+      
+      /* Make the entire card clickable */
+      .product-card {
+          cursor: pointer;
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+      
+      .product-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+      }
+  </style>
+</head>
+
+<body>
+  {% include 'navbar.html' %}
+  <section class="product-listing-section">
+    <div class="filters-and-products">
+      <div class="filters">
+        <h2>Filters</h2>
+        <div class="filter-options">
+          <button class="filter-button" data-filter="all">All</button>
+          {% for category in categories %}
+          <button class="filter-button" data-filter="{{ category.slug }}">{{ category.name }}</button>
+          {% endfor %}
+        </div>
+        <div class="sort-options">
+          <label for="sort">Sort By:</label>
+          <select id="sort">
+            <option value="default">Default</option>
+            <option value="price-low-to-high">Price: Low to High</option>
+            <option value="price-high-to-low">Price: High to Low</option>
+            <option value="name-a-to-z">Name: A to Z</option>
+            <option value="name-z-to-a">Name: Z to A</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="product-grid">
+        {% for product in products.items %}
+        <div class="product-card" data-product-id="{{ product.id }}" data-category="{{ product.category.slug }}" onclick="window.location.href='{{ url_for('main.product_detail', product_id=product.id) }}'">
+          <div class="product-content">
+              <img src="{{ product.image_url or 'https://placehold.co/200x200/46f27a/ffffff?text=Product' }}" 
+                  alt="{{ product.name }}">
+              <h3>{{ product.name }}</h3>
+              <div class="product-details">
+                  <span class="product-price">${{ "%.2f"|format(product.price) }}</span>
+                  <span class="product-rating">
+                    {% set total_reviews = product.reviews | length %}
+                    {% set avg_rating = 0 %}
+                    {% if total_reviews > 0 %}
+                      {% set total_rating = product.reviews | sum(attribute='rating') %}
+                      {% set avg_rating = (total_rating / total_reviews) | round(1) %}
+                    {% endif %}
+                    {% set full_stars = avg_rating | int %}
+                    {% set has_half_star = (avg_rating - full_stars) >= 0.5 %}
+                    {% for i in range(5) %}
+                      {% if i < full_stars %}
+                        <span class="star filled">★</span>
+                      {% elif i == full_stars and has_half_star %}
+                        <span class="star half-filled">★</span>
+                      {% else %}
+                        <span class="star empty">☆</span>
+                      {% endif %}
+                    {% endfor %}
+                    ({{ total_reviews }})
+                  </span>
+              </div>
+          </div>
+          <div class="product-actions">
+              <button class="add-to-cart" onclick="event.stopPropagation(); addToCart({{ product.id }})">
+                  <span class="material-symbols-outlined">shopping_cart</span> Add to Cart
+              </button>
+              <button class="add-to-wishlist" onclick="event.stopPropagation(); toggleWishlist({{ product.id }}, this)">
+                  <span class="material-symbols-outlined">favorite</span>
+              </button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div class="pagination">
+      {% if products.has_prev %}
+      <a href="{{ url_for('main.products', pet_type_id=pet_type.id, page=products.prev_num) }}" class="pagination-link">Previous</a>
+      {% endif %}
+      
+      {% for page_num in products.iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2) %}
+        {% if page_num %}
+          {% if products.page == page_num %}
+            <span class="pagination-link active">{{ page_num }}</span>
+          {% else %}
+            <a href="{{ url_for('main.products', pet_type_id=pet_type.id, page=page_num) }}" class="pagination-link">{{ page_num }}</a>
+          {% endif %}
+        {% else %}
+          <span class="pagination-ellipsis">...</span>
+        {% endif %}
+      {% endfor %}
+      
+      {% if products.has_next %}
+      <a href="{{ url_for('main.products', pet_type_id=pet_type.id, page=products.next_num) }}" class="pagination-link">Next</a>
+      {% endif %}
+    </div>
+  </section>
+
+  {% include 'footer.html' %}
+
+  <nav class="mobile-bottom-nav">
+    <a href="index.html">
+      <span class="material-symbols-outlined">home</span>
+      <span>Home</span>
+    </a>
+    <a href="#">
+      <span class="material-symbols-outlined">search</span>
+      <span>Search</span>
+    </a>
+    <a href="cart.html">
+      <span class="material-symbols-outlined">shopping_cart</span>
+      <span>Wishlist</span>
+    </a>
+    <a href="profile.html">
+      <span class="material-symbols-outlined">person</span>
+      <span>Profile</span>
+    </a>
+  </nav>
+  <script src="https://kit.fontawesome.com/51c1e7b4cb.js" crossorigin="anonymous"></script>
+  <script src="script.js"></script>
+  <script src="{{url_for('static',filename='js/product-listing.js')}}" defer></script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'939b551699ecbcc8',t:'MTc0NjIyODg5OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
