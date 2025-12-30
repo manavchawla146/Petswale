@@ -1,0 +1,75 @@
+/* Profile Edit Form Styles */
+.profile-edit-form {
+  max-width: 400px;
+  margin: 32px auto;
+  padding: 24px 28px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.profile-edit-form label {
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: #222;
+}
+
+.profile-edit-form input[type="text"],
+.profile-edit-form input[type="email"],
+.profile-edit-form input[type="tel"] {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+  margin-bottom: 10px;
+  background: #fafafa;
+}
+
+.profile-edit-form input:focus {
+  border-color: #ffca28;
+  outline: none;
+  background: #fffbe6;
+}
+
+.profile-edit-form .form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.profile-edit-form button,
+.profile-edit-form input[type="submit"] {
+  background: #ffca28;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 22px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.profile-edit-form button.cancel,
+.profile-edit-form input[type="button"].cancel {
+  background: #fff;
+  color: #ffca28;
+  border: 1.5px solid #ffca28;
+}
+
+.profile-edit-form button:hover,
+.profile-edit-form input[type="submit"]:hover {
+  background: #ffc107;
+}
+
+.profile-edit-form button.cancel:hover,
+.profile-edit-form input[type="button"].cancel:hover {
+  background: #fffbe6;
+  color: #ffb300;
+  border-color: #ffb300;
+}

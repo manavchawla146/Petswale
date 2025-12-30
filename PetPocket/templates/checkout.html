@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Petswale</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/petswaleyellowlogo.png') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/checkout.css') }}">
+  <link rel="stylesheet" href="{{url_for('static', filename='css/navbar.css')}}">
+  <link rel="stylesheet" href="{{url_for('static', filename='css/footer.css')}}">
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+</head>
+
+<body>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  {% include 'navbar.html' %}
+
+  <div class="container">
+    <div class="checkout-container">
+      <div class="checkout-left">
+        <div class="billing-section">
+          <h2>Billing Details</h2>
+          
+          {% if addresses %}
+          <div class="saved-addresses">
+            <h3>Your Addresses</h3>
+            <div class="address-selector">
+              <select id="savedAddresses" class="address-dropdown">
+                <option value="">Add New Address</option>
+                {% for address in addresses %}
+                <option value="{{ address.id }}" {% if address.is_default %}selected{% endif %}>
+                  {{ address.address_type | capitalize }}: {{ address.street_address }}, {{ address.city }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          {% else %}
+          <!-- Always render the select, but hide if no addresses -->
+          <div style="display:none;">
+            <select id="savedAddresses" class="address-dropdown">
+              <option value="">Add New Address</option>
+            </select>
+          </div>
+          {% endif %}
+          
+          <form class="billing-form" id="billingForm" method="POST" action="{{ url_for('main.checkout') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="firstName">First name <span class="required">*</span></label>
+                <input type="text" id="firstName" name="firstName" value="{{ user.username.split()[0] if user.username else '' }}" required>
+              </div>
+              <div class="form-group">
+                <label for="lastName">Last name <span class="required">*</span></label>
+                <input type="text" id="lastName" name="lastName" value="{{ user.username.split()[1] if user.username and ' ' in user.username else '' }}" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="phone">Phone <span class="required">*</span></label>
+              <input type="text" id="phone" name="phone" placeholder="Phone number" value="{{ user.phone or '' }}" required>
+            </div>
+            <div class="form-group">
+              <label for="email">Email <span class="required">*</span></label>
+              <input type="email" id="email" name="email" placeholder="Email address" value="{{ user.email or '' }}" required>
+            </div>
+
+            <div class="form-group">
+              <label for="addressType">Address Type</label>
+              <select id="addressType" name="addressType">
+                <option value="home">Home</option>
+                <option value="office">Office</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+
+            <div class="form-group">
+              <label for="country">Country / Region <span class="required">*</span></label>
+              <select id="country" name="country" required>
+                <option value="India">India</option>
+              </select>
+            </div>
+
+            <!-- Always render streetAddress input, but hide if not needed -->
+            <input type="text" id="streetAddress" name="streetAddress" placeholder="House number and street name" {% if show_street_address %}required{% endif %} style="display:{{ 'none' if not show_street_address else 'block' }};">
+
+            <div class="form-group">
+              <label for="apartment">Apartment, suite, unit, etc. <span class="required">*</span></label>
+              <input type="text" id="apartment" name="apartment" placeholder="Apartment, suite, unit, etc." required>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="state">State <span class="required">*</span></label>
+                <select id="state" name="state" required>
+                  <option value="">Select a state...</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="city">Town / City <span class="required">*</span></label>
+                <select id="city" name="city" required>
+                  <option value="">Select a city...</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="pinCode">PIN Code <span class="required">*</span></label>
+                <input type="text" id="pinCode" name="pinCode" pattern="[0-9]{6}" title="Please enter a valid 6-digit PIN code" required>
+              </div>
+            </div>
+
+
+
+
+            <div class="form-group">
+              <label for="orderNotes">Order notes (optional)</label>
+              <textarea id="orderNotes" name="orderNotes" placeholder="Notes about your order, e.g. special notes for delivery."></textarea>
+            </div>
+            
+            <button type="submit" class="save-address-button">
+              <i class="fas fa-save"></i> Save Address
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div class="checkout-right">
+        <div class="order-summary">
+          <h2>Order Summary</h2>
+          
+          <div class="cart-items">
+            {% for item in cart_items %}
+            <div class="cart-item">
+              <div class="item-image">
+                <img src="{{ item.product.image_url }}" alt="{{ item.product.name }}">
+              </div>
+              <div class="item-details">
+                <h4>{{ item.product.name }}</h4>
+                <div class="item-price">
+                  {% if item.product.discount_price and item.product.discount_price < item.product.price %}
+                    <span class="original-price">₹{{ "%.2f"|format(item.product.price) }}</span>
+                    <span class="current-price">₹{{ "%.2f"|format(item.product.discount_price) }}</span>
+                    <span>× {{ item.quantity }}</span>
+                    <p class="item-total">₹{{ "%.2f"|format(item.product.discount_price * item.quantity) }}</p>
+                  {% else %}
+                    <span>₹{{ "%.2f"|format(item.product.price) }} × {{ item.quantity }}</span>
+                    <p class="item-total">₹{{ "%.2f"|format(item.product.price * item.quantity) }}</p>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% else %}
+            <div class="empty-cart-message">Your cart is empty</div>
+            {% endfor %}
+          </div>
+          
+          <div class="promo-code">
+            <input type="text" placeholder="Promo Code" id="promoCode" value="{{ session.promo_code if session.promo_code else '' }}" {% if discount > 0 %}disabled{% endif %}>
+            <button class="apply-promo" {% if discount > 0 %}style="display:none;"{% endif %}>Apply</button>
+            {% if discount > 0 %}
+            <button class="remove-promo" id="removePromoBtn" type="button">Remove</button>
+            {% endif %}
+            <div id="promoMessage" class="promo-message"></div>
+          </div>
+
+          <div class="summary-calculations">
+            <div class="summary-row">
+              <span>Subtotal</span>
+              <span class="subtotal">₹{{ "%.2f"|format(subtotal) }}</span>
+            </div>
+            {% if discount > 0 %}
+            <div class="summary-row discount-row">
+              <span>Discount</span>
+              <span class="discount-amount">-₹{{ "%.2f"|format(discount) }}</span>
+            </div>
+            {% endif %}
+            <div class="summary-row">
+              <span>Shipping</span>
+              <span class="shipping">
+                {% if shipping == 0 %}
+                  <span class="free-badge">Free</span>
+                {% else %}
+                  ₹{{ "%.2f"|format(shipping) }}
+                {% endif %}
+              </span>
+            </div>
+            <!-- Tax removed as per requirements -->
+            {% if savings > 0 %}
+            <div class="summary-row savings">
+              <span>You saved</span>
+              <span class="saved-amount">₹{{ "%.2f"|format(savings) }}</span>
+            </div>
+            {% endif %}
+            <div class="summary-total-container">
+            <div class="summary-total">
+              <span>Total</span>
+              <span class="total-value">₹{{ "%.2f"|format(total) }}</span>
+            </div>
+          
+          <button class="proceed-button" id="proceedToPayment" disabled title="Fill the details">
+            <i class="fas fa-lock"></i> Complete Order
+          </button>
+          <span id="orderTooltip" class="order-tooltip" style="display:none;">Fill the details</span>
+          </div>
+          </div>
+          
+          <div class="secure-checkout">
+            <i class="fas fa-shield-alt"></i>
+            <span>Secure Checkout</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Success Modal -->
+  <div id="paymentPopup" class="payment-popup">
+    <div class="payment-popup-overlay"></div>
+    <div class="payment-content"> <!-- Changed from payment-popup-content to payment-content -->
+      <div class="payment-popup-icon">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <h3>Payment Successful!</h3>
+      <p>Your order has been placed and will be processed soon.</p>
+      <p class="order-number">Order #<span id="orderIdDisplay"></span></p>
+      <p class="email-confirmation">A confirmation email has been sent to your email address.</p>
+      <div class="action-buttons">
+        <a id="continueShoppingBtn" class="secondary-button" href="/">Continue to Home</a>
+        <a id="viewOrderBtn" class="primary-button" href="/profile#orders">View Order</a>
+      </div>
+    </div>
+  </div>
+  
+  <style>
+    /* Order Summary Styles */
+    .summary-calculations {
+      margin: 20px 0;
+      padding: 15px;
+      background: #f9f9f9;
+      border-radius: 8px;
+    }
+    
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 15px;
+      color: #333;
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .summary-row:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    
+    .summary-row.savings {
+      color: #388e3c; /* Green color for savings */
+      font-weight: 500;
+    }
+    
+    .summary-row.discount-row {
+      color: #d32f2f; /* Red color for discounts */
+    }
+    
+    .summary-total {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 2px solid #eee;
+      font-size: 18px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+    
+    .free-badge {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+      margin-left: 5px;
+    }
+    
+    .saved-amount {
+      color: #388e3c;
+      font-weight: 500;
+    }
+    
+    .discount-amount {
+      color: #d32f2f;
+      font-weight: 500;
+    }
+    
+    /* Price styles for checkout items */
+    .item-price {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      margin: 5px 0;
+    }
+    
+    .item-price .original-price {
+      text-decoration: line-through;
+      color: #999;
+      font-size: 0.9em;
+    }
+    
+    .item-price .current-price {
+      color: #e53935;
+      font-weight: 600;
+    }
+    
+    .item-total {
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    .payment-popup {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    
+    .payment-popup.active {
+      display: flex;
+    }
+    
+    .payment-popup-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1;
+    }
+    
+    .payment-popup-content {
+      background: white;
+      border-radius: 10px;
+      padding: 30px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      animation: modalFadeIn 0.3s ease-out;
+    }
+    
+    .payment-popup-icon {
+      font-size: 60px;
+      color: #4CAF50;
+      margin-bottom: 20px;
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-top: 25px;
+      flex-wrap: wrap;
+    }
+    
+    .secondary-button, .primary-button {
+      padding: 10px 25px;
+      border: none;
+      border-radius: 5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .secondary-button {
+      background: #f0f0f0;
+      color: #333;
+    }
+    
+    .primary-button {
+      background: #4CAF50;
+      color: white;
+    }
+    
+    @keyframes modalFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    /* Disable body scroll when modal is open */
+    body.modal-open {
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+    }
+  </style>
+  
+  <script>
+    function showPaymentSuccess(orderId) {
+      const modal = document.getElementById('paymentPopup');
+      const orderIdDisplay = document.getElementById('orderIdDisplay');
+      
+      if (orderIdDisplay) {
+        orderIdDisplay.textContent = orderId || 'N/A';
+      }
+      
+      if (modal) {
+        document.body.classList.add('modal-open');
+        modal.style.display = 'flex';
+        // Force reflow
+        void modal.offsetHeight;
+        modal.classList.add('show'); // Changed from 'active' to 'show'
+      }
+      
+      // Setup button event listeners
+      const continueBtn = document.getElementById('continueShoppingBtn');
+      const viewOrderBtn = document.getElementById('viewOrderBtn');
+      
+      if (continueBtn) {
+        continueBtn.onclick = function() {
+          window.location.href = '/';
+        };
+      }
+      
+      if (viewOrderBtn) {
+        viewOrderBtn.onclick = function() {
+          window.location.href = '/profile#orders';
+        };
+      }
+    }
+    
+    function closePaymentPopup() {
+      const modal = document.getElementById('paymentPopup');
+      if (modal) {
+        modal.classList.remove('show'); // Changed from 'active' to 'show'
+        // Wait for the animation to complete before hiding
+        setTimeout(() => {
+          modal.style.display = 'none';
+          document.body.classList.remove('modal-open');
+        }, 300);
+      }
+    }
+  </script>
+
+
+    {% include 'footer.html' %}
+
+
+  <nav class="mobile-bottom-nav">
+    <a href="{{ url_for('main.home') }}" class="{% if request.endpoint == 'main.home' %}active{% endif %}">
+      <span class="material-symbols-outlined">home</span>
+      <span>Home</span>
+    </a>
+    <a href="{{ url_for('main.search') }}" class="{% if request.endpoint == 'main.search' %}active{% endif %}">
+      <span class="material-symbols-outlined">search</span>
+      <span>Search</span>
+    </a>
+    <a href="{{ url_for('main.wishlist') }}" class="{% if request.endpoint == 'main.wishlist' %}active{% endif %}">
+      <span class="material-symbols-outlined">favorite</span>
+      <span>Wishlist</span>
+    </a>
+    {% if current_user.is_authenticated %}
+      <a href="{{ url_for('main.profile') }}" class="{% if request.endpoint == 'main.profile' %}active{% endif %}">
+        <span class="material-symbols-outlined">person</span>
+        <span>Profile</span>
+      </a>
+    {% else %}
+      <a href="{{ url_for('main.signin') }}" class="{% if request.endpoint == 'main.signin' %}active{% endif %}">
+        <span class="material-symbols-outlined">login</span>
+        <span>Login</span>
+      </a>
+    {% endif %}
+  </nav>
+
+  <!-- Scripts -->
+  <script>
+        // Form validation on payment
+        document.addEventListener('DOMContentLoaded', function() {
+            const billingForm = document.querySelector('.billing-form');
+            const proceedButtons = document.querySelectorAll('.proceed-button');
+            
+            proceedButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Validate form (basic check)
+                    const requiredFields = billingForm.querySelectorAll('[required]');
+                    let isValid = true;
+
+                    requiredFields.forEach(field => {
+                        if (!field.value.trim()) {
+                            isValid = false;
+                            field.classList.add('error');
+                        } else {
+                            field.classList.remove('error');
+                        }
+                    });
+
+                    if (!isValid) {
+                        // Only show error, do not toggle or scroll form
+                        return;
+                    }
+                });
+            });
+        });
+
+        function closePaymentPopup() {
+            document.getElementById('paymentPopup').style.display = 'none';
+            window.location.href = '#order-confirmation/' + document.getElementById('orderIdDisplay').textContent;
+        }
+    </script>
+  <script>
+    // Add this function at the start of your script
+    function getCsrfToken() {
+      return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    }
+
+    document.getElementById('proceedToPayment').addEventListener('click', function() {
+      // Validate if an address is selected or filled out
+      const savedAddresses = document.getElementById('savedAddresses');
+      const streetAddress = document.getElementById('streetAddress');
+      
+      if (!savedAddresses.value && !streetAddress.value) {
+        alert('Please select or enter a delivery address');
+        return;
+      }
+
+      fetch('/create_order', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': getCsrfToken()  // Add CSRF token
+          },
+          body: JSON.stringify({
+              address_id: savedAddresses.value || null
+          })
+      })
+      .then(response => response.json())
+      .then(data => {
+          if (data.success) {
+              var options = {
+                  "key": data.key,
+                  "amount": data.amount,
+                  "currency": data.currency,
+                  "name": "PetPocket",
+                  "description": "Pet Products Purchase",
+                  "theme": {
+                      "color": "#3399cc"
+                  },
+                  "order_id": data.order_id,
+                  "handler": function (response) {
+                      console.log('Razorpay response received:', response);
+                      fetch('/payment_callback', {
+                          method: 'POST',
+                          headers: {
+                              'Content-Type': 'application/x-www-form-urlencoded',
+                              'X-CSRFToken': getCsrfToken()
+                          },
+                          body: new URLSearchParams({
+                              'razorpay_payment_id': response.razorpay_payment_id,
+                              'razorpay_order_id': response.razorpay_order_id,
+                              'razorpay_signature': response.razorpay_signature
+                          })
+                      })
+                      .then(response => {
+                          console.log('Payment callback response status:', response.status);
+                          if (!response.ok) {
+                              throw new Error('Network response was not ok');
+                          }
+                          return response.json();
+                      })
+                      .then(data => {
+                          console.log('Payment callback data:', data);
+                          if (data.success) {
+                              const orderId = data.order_id || 'N/A';
+                              console.log('Setting order ID:', orderId);
+                              document.getElementById('orderIdDisplay').textContent = orderId;
+                              
+                              // Show the modal
+                              const modal = document.getElementById('paymentPopup');
+                              console.log('Modal element:', modal);
+                              if (modal) {
+                                  modal.classList.add('show');
+                                  modal.style.display = 'flex';
+                                  console.log('Modal should be visible now');
+                              } else {
+                                  console.error('Could not find payment popup element');
+                              }
+                          } else {
+                              const errorMsg = 'Payment verification failed: ' + (data.error || 'Unknown error');
+                              console.error(errorMsg);
+                              alert(errorMsg);
+                          }
+                      })
+                      .catch(error => {
+                          console.error('Callback error:', error);
+                          alert('Payment processing error: ' + error.message);
+                      });
+                  },
+                  "prefill": {
+                      "name": "{{ user.username }}",
+                      "email": "{{ user.email }}",
+                      "contact": "{{ user.phone }}"
+                  },
+                  "theme": {
+                      "color": "#FF6B6B"
+                  }
+              };
+              var rzp = new Razorpay(options);
+              rzp.open();
+          } else {
+              alert('Failed to create order: ' + (data.error || 'Unknown error'));
+          }
+      })
+      .catch(error => {
+          console.error('Error:', error);
+          alert('Failed to process payment: ' + error);
+      });
+    });
+
+    function closePaymentPopup() {
+        const modal = document.getElementById('paymentPopup');
+        if (modal) {
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+        }
+        window.location.href = '/order-confirmation/' + document.getElementById('orderIdDisplay').textContent;
+    }
+
+    // Address form handling
+    document.addEventListener('DOMContentLoaded', function() {
+      // Load Indian states and cities JSON and populate dropdowns
+      fetch("{{ url_for('static', filename='assets/Indian-states-cities.json') }}")
+        .then(response => response.json())
+        .then(data => {
+          const stateSelect = document.getElementById('state');
+          const citySelect = document.getElementById('city');
+
+          // Populate states
+          stateSelect.innerHTML = '<option value="">Select a state...</option>';
+          Object.keys(data).forEach(state => {
+            const option = document.createElement('option');
+            option.value = state;
+            option.textContent = state;
+            stateSelect.appendChild(option);
+          });
+
+          // When state changes, populate cities
+          stateSelect.addEventListener('change', function() {
+            const selectedState = this.value;
+            citySelect.innerHTML = '<option value="">Select a city...</option>';
+            if (data[selectedState]) {
+              data[selectedState].forEach(city => {
+                const option = document.createElement('option');
+                option.value = city;
+                option.textContent = city;
+                citySelect.appendChild(option);
+              });
+            }
+          });
+        })
+        .catch(error => {
+          console.error('Error loading states/cities JSON:', error);
+        });
+
+      const savedAddressesSelect = document.getElementById('savedAddresses');
+      const billingForm = document.getElementById('billingForm');
+      const formInputs = billingForm.querySelectorAll('input, select, textarea');
+      
+      // Fixed: Removed the orphaned closing brace and properly structured the function
+      function toggleFormFields(disabled) {
+        formInputs.forEach(input => {
+          if (input.id !== 'savedAddresses') {
+            input.disabled = disabled;
+          }
+        });
+      }
+      
+      function resetForm() {
+        billingForm.reset();
+        toggleFormFields(false);
+      }
+      
+      function populateForm(addressData) {
+        const mappings = {
+          'firstName': addressData.first_name,
+          'lastName': addressData.last_name,
+          'addressType': addressData.address_type,
+          'companyName': addressData.company_name,
+          'streetAddress': addressData.street_address,
+          'apartment': addressData.apartment,
+          'city': addressData.city,
+          'state': addressData.state,
+          'country': addressData.country,
+          'pinCode': addressData.pin_code,
+          'phone': addressData.phone,
+          'email': addressData.email
+        };
+        
+        for (const [id, value] of Object.entries(mappings)) {
+          const input = document.getElementById(id);
+          if (input && value) {
+            input.value = value;
+          }
+        }
+        
+        toggleFormFields(true);
+      }
+
+      // In the change event listener:
+      savedAddressesSelect.addEventListener('change', function() {
+        if (this.value === "") {
+          // Enable form for new address
+          toggleFormFields(false);
+          // Smooth scroll to form
+          setTimeout(() => {
+            billingForm.scrollIntoView({ behavior: 'smooth' });
+          }, 100);
+          // Reset form when adding new address
+          resetForm();
+        } else {
+          // Disable form and populate with selected address
+          toggleFormFields(true);
+          fetch(`/get_address/${this.value}`)
+            .then(response => response.json())
+            .then(data => {
+              if (data.success) {
+                populateForm(data.address);
+              }
+            })
+            .catch(error => {
+              console.error('Error fetching address:', error);
+              resetForm();
+            });
+        }
+      });
+      
+      // Handle initial state
+      if (savedAddressesSelect.value) {
+        // Disable form if an address is already selected
+        toggleFormFields(true);
+        fetch(`/get_address/${savedAddressesSelect.value}`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              populateForm(data.address);
+            }
+          })
+          .catch(error => {
+            console.error('Error fetching initial address:', error);
+          });
+      } else {
+        // If no address is selected, show the form for new address
+        billingForm.style.display = 'flex';
+      }
+
+      // Form validation
+      billingForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Basic validation
+        const requiredFields = billingForm.querySelectorAll('[required]');
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+          if (!field.value.trim()) {
+            isValid = false;
+            field.classList.add('error');
+          } else {
+            field.classList.remove('error');
+          }
+        });
+
+        if (!isValid) {
+          alert('Please fill in all required fields');
+          // Show form if validation fails
+          billingForm.style.display = 'flex';
+          billingForm.scrollIntoView({ behavior: 'smooth' });
+          return;
+        }
+
+        // Submit the form
+        this.submit();
+      });
+    });
+  </script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/checkout.js') }}"></script>
+</body>
+</html>
